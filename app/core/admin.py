@@ -23,6 +23,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('name', 'email', 'password1', 'password2')
         }),
     )
+    list_display_links = ('name', 'email')
 
 
 admin.site.register(models.User, UserAdmin)
