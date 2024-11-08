@@ -4,10 +4,14 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Recipe
-from recipe.serializers import RecipeSerializer
+from core.models import Recipe, Tag, Ingredient
+from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
 
 RECIPIE_URL = reverse('recipe:recipe-list')
+
+
+def detail_url(recipe_id):
+    return reverse('recipe:recipe-detail', args=[recipe_id])
 
 
 def sample_recipe(user, **param):
@@ -18,6 +22,14 @@ def sample_recipe(user, **param):
     }
     payload.update(param)
     return Recipe.objects.create(user=user, **payload)
+
+
+def sample_tag(user, name='Comfort Fruit'):
+    return Tag.objects.create(user=user, name=name)
+
+
+def sample_ingredient(user, name='Vinegar'):
+    return Ingredient.objects.create(user=user, name=name)
 
 
 class PublicrecipesApiTests(TestCase):
@@ -33,7 +45,7 @@ class PublicrecipesApiTests(TestCase):
         self.assertEquals(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class PrivaterecipesApiTests(TestCase):
+class PrivateRecipesApiTests(TestCase):
     """Private recipes API for authenticated users"""
 
     def setUp(self):
@@ -51,7 +63,7 @@ class PrivaterecipesApiTests(TestCase):
         sample_recipe(user=self.user)
 
         res = self.client.get(RECIPIE_URL)
-        recipes = Recipe.objects.all().order_by('-id')
+        recipes = Recipe.objects.all()
         serializer = RecipeSerializer(recipes, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -68,9 +80,21 @@ class PrivaterecipesApiTests(TestCase):
         sample_recipe(user=self.user)
 
         res = self.client.get(RECIPIE_URL)
-        recipes = Recipe.objects.filter(user=self.user).order_by('-id')
+        recipes = Recipe.objects.filter(user=self.user)
         serializer = RecipeSerializer(recipes, many=True)
 
         self.assertEquals(res.status_code, status.HTTP_200_OK)
         self.assertEquals(len(res.data), 1)
+        self.assertEquals(res.data, serializer.data)
+
+    def test_view_recipe_detail(self):
+        """Test retrieving recipe details"""
+        recipe = sample_recipe(user=self.user)
+        recipe.tags.add(sample_tag(user=self.user))
+        recipe.ingredients.add(sample_ingredient(user=self.user))
+
+        url = detail_url(recipe.id)
+        res = self.client.get(url)
+        serializer = RecipeDetailSerializer(recipe)
+
         self.assertEquals(res.data, serializer.data)
