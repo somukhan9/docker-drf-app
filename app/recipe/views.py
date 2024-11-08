@@ -22,7 +22,7 @@ class TagViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin, mixins.ListMode
         serializer.save(user=self.request.user)
 
 
-class IngredientViewSet(viewsets.ModelViewSet, mixins.ListModelMixin):
+class IngredientViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin, mixins.ListModelMixin):
     """Manage ingredients in the database."""
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
