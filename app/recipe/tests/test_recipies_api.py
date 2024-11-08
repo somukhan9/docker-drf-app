@@ -153,6 +153,7 @@ class PrivateRecipesApiTests(TestCase):
         self.assertIn(ingredient2, ingredients)
 
     def test_create_recipe_with_tags_and_ingredients(self):
+        """Test creating recipe with tags and ingredients"""
         tag1 = sample_tag(user=self.user, name='Bread')
         tag2 = sample_tag(user=self.user, name='Cheese')
 
@@ -180,3 +181,55 @@ class PrivateRecipesApiTests(TestCase):
         self.assertIn(tag2, tags)
         self.assertIn(ingredient1, ingredients)
         self.assertIn(ingredient2, ingredients)
+
+    def test_recipe_update_partial(self):
+        """Test updating recipe"""
+        tag = sample_tag(user=self.user, name='Bread')
+        recipe = sample_recipe(user=self.user)
+        recipe.tags.add(tag)
+
+        new_tag = sample_tag(user=self.user, name='Cheese')
+        payload = {
+            'title': 'Cheese Burger',
+            'tags': [new_tag.id]
+        }
+
+        res = self.client.patch(detail_url(recipe.id), payload)
+        recipe.refresh_from_db()
+
+        tags = recipe.tags.all()
+        ingredients = recipe.ingredients.all()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(tags), 1)
+        self.assertEqual(len(ingredients), 0)
+        self.assertEqual(recipe.title, payload['title'])
+        self.assertIn(new_tag, tags)
+
+    def test_recipe_update_full(self):
+        """Test updating recipe"""
+        tag = sample_tag(user=self.user, name='Bread')
+        recipe = sample_recipe(user=self.user)
+        recipe.tags.add(tag)
+
+        new_tag = sample_tag(user=self.user, name='Cheese')
+        payload = {
+            'title': 'Cheese Burger',
+            'time_minutes': 10,
+            'tags': [new_tag.id],
+            'price': 30
+        }
+        res = self.client.put(detail_url(recipe.id), payload)
+
+        recipe.refresh_from_db()
+
+        tags = recipe.tags.all()
+        ingredients = recipe.ingredients.all()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(recipe.title, payload['title'])
+        self.assertEqual(len(tags), len(payload['tags']))
+        self.assertEqual(recipe.time_minutes, payload['time_minutes'])
+        self.assertEqual(recipe.price, payload['price'])
+        self.assertIn(new_tag, tags)
+
